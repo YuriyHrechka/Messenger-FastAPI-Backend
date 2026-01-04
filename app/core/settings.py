@@ -10,12 +10,12 @@ class Settings(BaseSettings):
     API_PREFIX: str = "/api/v1"
     PROJECT_NAME: str = "Messenger"
 
-    SECRET_KEY: str = "your-secret-key"
+    SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     POSTGRES_USER: str
-    POSTGRES_PASSWORD: str = ""
+    POSTGRES_PASSWORD: str
     POSTGRES_HOST: str
     POSTGRES_PORT: int
     POSTGRES_DB: str
