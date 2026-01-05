@@ -30,15 +30,31 @@ class ChatParticipant(SQLModel, table=True):
     joined_at: datetime = Field(default_factory=get_utc_now)
 
 
-class User(SQLModel, table=True):
-    """Represents a registered user in the application.
+class UserBase(SQLModel):
+    """Shared properties for User models.
+
+    This class serves as the base for the User table and Pydantic
+    schemas (e.g., UserCreate, UserRead).
+
+    Attributes:
+        email (str): The user's email address. Marked as unique in the table model.
+        username (str): The user's display name. Marked as unique in the table model.
+        avatar_url (Optional[str]): URL string to the user's profile image.
+            Defaults to None.
+    """
+    email: str = Field(unique=True, index=True)
+    username: str = Field(unique=True, index=True)
+    avatar_url: Optional[str] = None
+
+
+class User(UserBase, table=True):
+    """Represents a registered user in the application database.
+
+    Inherits email, username, and avatar_url from UserBase.
 
     Attributes:
         id (Optional[int]): The unique identifier for the user.
-        email (str): The user's email address. Must be unique.
-        username (str): The user's display name. Must be unique.
         hashed_password (str): The hashed version of the user's password for security.
-        avatar_url (Optional[str]): URL string to the user's profile image. Defaults to None.
         created_at (datetime): Timestamp when the account was created.
             Defaults to the current UTC time.
         last_online (datetime): Timestamp of the user's last known activity.
@@ -48,10 +64,7 @@ class User(SQLModel, table=True):
     """
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    email: str = Field(unique=True, index=True)
-    username: str = Field(unique=True, index=True)
     hashed_password: str
-    avatar_url: Optional[str] = None
     created_at: datetime = Field(default_factory=get_utc_now)
     chats: List["Chat"] = Relationship(
         back_populates="users", link_model=ChatParticipant
