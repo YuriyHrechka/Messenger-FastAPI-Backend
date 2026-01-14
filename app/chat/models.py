@@ -1,15 +1,9 @@
 from datetime import datetime, timezone
-from typing import Optional, List
-from sqlmodel import SQLModel, Field, Relationship
+from typing import Optional, List, TYPE_CHECKING
+from sqlmodel import Column, DateTime, SQLModel, Field, Relationship, text
 
-
-def get_utc_now():
-    """Gets the current timezone-aware datetime in UTC.
-
-    Returns:
-        datetime: The current time in UTC.
-    """
-    return datetime.now(timezone.utc)
+if TYPE_CHECKING:
+    from users.models import User
 
 
 class ChatParticipant(SQLModel, table=True):
@@ -27,50 +21,13 @@ class ChatParticipant(SQLModel, table=True):
 
     user_id: int = Field(foreign_key="user.id", primary_key=True)
     chat_id: int = Field(foreign_key="chat.id", primary_key=True)
-    joined_at: datetime = Field(default_factory=get_utc_now)
-
-
-class UserBase(SQLModel):
-    """Shared properties for User models.
-
-    This class serves as the base for the User table and Pydantic
-    schemas (e.g., UserCreate, UserRead).
-
-    Attributes:
-        email (str): The user's email address. Marked as unique in the table model.
-        username (str): The user's display name. Marked as unique in the table model.
-        avatar_url (Optional[str]): URL string to the user's profile image.
-            Defaults to None.
-    """
-    email: str = Field(unique=True, index=True)
-    username: str = Field(unique=True, index=True)
-    avatar_url: Optional[str] = None
-
-
-class User(UserBase, table=True):
-    """Represents a registered user in the application database.
-
-    Inherits email, username, and avatar_url from UserBase.
-
-    Attributes:
-        id (Optional[int]): The unique identifier for the user.
-        hashed_password (str): The hashed version of the user's password for security.
-        created_at (datetime): Timestamp when the account was created.
-            Defaults to the current UTC time.
-        last_online (datetime): Timestamp of the user's last known activity.
-            Defaults to the current UTC time.
-        chats (List[Chat]): A list of Chat objects this user is a participant of.
-        messages (List[Message]): A list of Message objects sent by this user.
-    """
-
-    id: Optional[int] = Field(default=None, primary_key=True)
-    hashed_password: str
-    created_at: datetime = Field(default_factory=get_utc_now)
-    chats: List["Chat"] = Relationship(
-        back_populates="users", link_model=ChatParticipant
+    joined_at: datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=text("TIMEZONE('utc', now())"),
+            nullable=False,
+        )
     )
-    messages: List["Message"] = Relationship(back_populates="sender")
-    last_online: datetime = Field(default_factory=get_utc_now)
 
 
 class Chat(SQLModel, table=True):
@@ -91,9 +48,17 @@ class Chat(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     title: Optional[str] = None
     is_group: bool = Field(default=False)
-    created_at: datetime = Field(default_factory=get_utc_now)
+    created_at: datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=text("TIMEZONE('utc', now())"),
+            nullable=False,
+        )
+    )
 
-    users: List[User] = Relationship(back_populates="chats", link_model=ChatParticipant)
+    users: List["User"] = Relationship(
+        back_populates="chats", link_model=ChatParticipant
+    )
     messages: List["Message"] = Relationship(back_populates="chat")
 
 
@@ -113,8 +78,14 @@ class Message(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     content: str
-    created_at: datetime = Field(default_factory=get_utc_now)
+    created_at: datetime = Field(
+        sa_column=Column(
+            DateTime(timezone=True),
+            server_default=text("TIMEZONE('utc', now())"),
+            nullable=False,
+        )
+    )
     chat_id: int = Field(foreign_key="chat.id")
     sender_id: int = Field(foreign_key="user.id")
     chat: Chat = Relationship(back_populates="messages")
-    sender: User = Relationship(back_populates="messages")
+    sender: "User" = Relationship(back_populates="messages")
