@@ -1,6 +1,6 @@
-from datetime import datetime, timezone
-from typing import Optional, List
-from sqlmodel import SQLModel, Field, Relationship
+from typing import Optional
+from sqlmodel import SQLModel, Field
+from datetime import datetime
 
 
 class UserBase(SQLModel):
@@ -17,5 +17,15 @@ class UserBase(SQLModel):
     """
 
     email: str = Field(unique=True, index=True)
-    username: str = Field(unique=True, index=True)
+    username: str = Field(unique=True, index=True, max_length=12)
     avatar_url: Optional[str] = None
+
+
+class UserCreate(UserBase):
+    password: str = Field(min_length=8)
+
+
+class UserRead(UserBase):
+    id: int
+    created_at: datetime
+    last_online: datetime
