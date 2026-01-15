@@ -1,6 +1,6 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional, List
-from sqlmodel import Column, DateTime, SQLModel, Field, Relationship, text
+from sqlmodel import Column, DateTime, Field, Relationship, text
 from .schemas import UserBase
 from app.chat.models import ChatParticipant, Chat, Message
 
@@ -22,7 +22,7 @@ class User(UserBase, table=True):
     """
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    hashed_password: str
+    hashed_password: str = Field(exclude=True)
     created_at: datetime = Field(
         sa_column=Column(
             DateTime(timezone=True),
