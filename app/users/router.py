@@ -1,5 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, HTTPException, status
 from .schemas import UserCreate, UserRead
 from app.core.deps import UserServiceDep
 from typing import Annotated
@@ -20,27 +19,3 @@ async def register(user_data: UserCreate, user_service: UserServiceDep):
         raise HTTPException(status_code=400, detail="Username already taken")
 
     return await user_service.create_user(user_data)
-
-
-@router.post("/login")
-async def login(
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    user_service: UserServiceDep,
-):
-    user = await user_service.get_by_email(form_data.username)
-
-    if (
-        not user
-        or not user.id
-        or not verify_password(form_data.password, user.hashed_password)
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect email or password",
-        )
-
-    return {
-        "access_token": create_access_token(user.id),
-        "refresh_token": create_refresh_token(user.id),
-        "token_type": "bearer",
-    }
