@@ -1,8 +1,6 @@
 from fastapi import APIRouter, HTTPException, status
 from .schemas import UserCreate, UserRead
-from app.core.deps import UserServiceDep
-from typing import Annotated
-from app.core.security import verify_password, create_access_token, create_refresh_token
+from app.core.deps import CurrentUser, UserServiceDep
 
 
 router = APIRouter()
@@ -19,3 +17,8 @@ async def register(user_data: UserCreate, user_service: UserServiceDep):
         raise HTTPException(status_code=400, detail="Username already taken")
 
     return await user_service.create_user(user_data)
+
+
+@router.get("/profile", response_model=UserRead)
+async def read_user_profile(current_user: CurrentUser):
+    return current_user

@@ -1,9 +1,6 @@
-from fastapi.security import OAuth2PasswordRequestForm
 from datetime import datetime, timedelta, timezone
 from passlib.context import CryptContext
 from app.core.settings import settings
-
-from typing import Any
 import jwt
 
 
