@@ -3,6 +3,7 @@ from fastapi import Depends, HTTPException, Request, status
 from redis.asyncio import Redis
 from sqlmodel.ext.asyncio.session import AsyncSession
 from fastapi.security import OAuth2PasswordBearer
+import logging
 
 from app.auth.service import AuthService
 from app.core.security import verify_token
@@ -10,6 +11,8 @@ from app.core.settings import settings
 from app.db.session import get_session
 from app.users.service import UserService
 from app.users.models import User
+
+logger = logging.getLogger(__name__)
 
 reusable_oauth2 = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/auth/login")
 
@@ -52,6 +55,7 @@ async def get_current_user(
 
     if jti:
         if await auth_service.is_token_revoked(jti):
+            logger.warning(f"Access attempt with revoked token. JTI: {jti}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token has been revoked",
@@ -65,6 +69,7 @@ async def get_current_user(
 
     user = await service.get_by_id(int(user_id))
     if not user:
+        logger.error(f"Token valid but User ID {user_id} not found in DB.")
         raise HTTPException(status_code=404, detail="User not found")
 
     return user

@@ -6,6 +6,12 @@ from app.core.security import get_password_hash
 
 
 class UserService:
+    """Service layer for performing database operations on User entities.
+
+    This class encapsulates business logic and data access patterns
+    (CRUD) for Users to keep the API routes clean.
+    """
+
     def __init__(self, session: AsyncSession):
         self.session = session
 
@@ -27,6 +33,7 @@ class UserService:
         return user is not None
 
     async def create_user(self, user_in: UserCreate) -> User:
+        # Exclude password so we don't save plain text to the DB
         user_dict = user_in.model_dump(exclude={"password"})
 
         new_user = User(**user_dict)

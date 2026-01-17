@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from typing import Annotated
+import logging
 
 from app.core.security import (
     verify_password,
@@ -14,6 +15,7 @@ from app.users.models import User
 from app.core.deps import SessionDep
 from .schemas import TokenRefresh
 
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -30,6 +32,7 @@ async def login(
         or not user.id
         or not verify_password(form_data.password, user.hashed_password)
     ):
+        logger.warning(f"Failed login attempt for user: {form_data.username}")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Incorrect email or password",
@@ -47,20 +50,25 @@ async def refresh_access_token(
     token_data: TokenRefresh,
     session: SessionDep,
 ):
-    payload = verify_token(token_data.refresh_token, required_type="refresh")
-    user_id_str = payload.get("sub")
+    try:
+        payload = verify_token(token_data.refresh_token, required_type="refresh")
+        user_id_str = payload.get("sub")
 
-    user = await session.get(User, int(user_id_str))  # type: ignore
-    if not user or not user.id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found",
-        )
+        user = await session.get(User, int(user_id_str))  # type: ignore
+        if not user or not user.id:
+            logger.warning(f"Token refresh failed: User ID {user_id_str} not found.")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="User not found",
+            )
 
-    return {
-        "access_token": create_access_token(user.id),
-        "token_type": "bearer",
-    }
+        return {
+            "access_token": create_access_token(user.id),
+            "token_type": "bearer",
+        }
+    except Exception as e:
+        logger.error(f"Error during token refresh: {e}")
+        raise e
 
 
 @router.post("/logout", status_code=status.HTTP_200_OK)
@@ -76,7 +84,7 @@ async def logout(
     if jti and exp_timestamp:
         now = datetime.now(timezone.utc).timestamp()
         ttl = int(exp_timestamp - now)
-        
+
         if ttl > 0:
             await auth_service.revoke_token(jti, ttl)
 
