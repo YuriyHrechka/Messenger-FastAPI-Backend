@@ -1,5 +1,6 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from redis.asyncio import Redis
 
 from app.core.settings import settings
 
@@ -10,7 +11,13 @@ from app.users.router import router as users_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("Starting up...")
+    app.state.redis = Redis.from_url(
+        url=settings.REDIS_URL, encoding="utf-8", decode_responses=True
+    )
+
     yield
+
+    await app.state.redis.close()
     print("Shutting down...")
 
 

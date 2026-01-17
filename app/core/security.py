@@ -3,12 +3,13 @@ from fastapi import HTTPException, status
 from passlib.context import CryptContext
 from app.core.settings import settings
 import jwt
+import uuid
 
 
 pwd_context = CryptContext(schemes=["argon2"])
 
 
-def verify_token(token: str, required_type: str) -> str:
+def verify_token(token: str, required_type: str) -> dict:
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -29,7 +30,7 @@ def verify_token(token: str, required_type: str) -> str:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        return token_data
+        return payload
 
     except (jwt.InvalidTokenError, ValueError):
         raise HTTPException(
@@ -42,7 +43,7 @@ def verify_token(token: str, required_type: str) -> str:
 def _create_token(data: dict, expires_delta: timedelta) -> str:
     to_encode = data.copy()
     expire = datetime.now(timezone.utc) + expires_delta
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "jti": str(uuid.uuid4())})
 
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
