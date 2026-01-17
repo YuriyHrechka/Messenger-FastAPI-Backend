@@ -47,9 +47,9 @@ async def refresh_access_token(
     token_data: TokenRefresh,
     session: SessionDep,
 ):
-    user_id = verify_token(token_data.refresh_token, required_type="refresh")
+    user_id_str = verify_token(token_data.refresh_token, required_type="refresh")
 
-    user = await session.get(User, user_id)
+    user = await session.get(User, int(user_id_str))
     if not user or not user.id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

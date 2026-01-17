@@ -8,7 +8,7 @@ import jwt
 pwd_context = CryptContext(schemes=["argon2"])
 
 
-def verify_token(token: str, required_type: str) -> int:
+def verify_token(token: str, required_type: str) -> str:
     try:
         payload = jwt.decode(
             token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
@@ -29,7 +29,7 @@ def verify_token(token: str, required_type: str) -> int:
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        return int(token_data)
+        return token_data
 
     except (jwt.InvalidTokenError, ValueError):
         raise HTTPException(

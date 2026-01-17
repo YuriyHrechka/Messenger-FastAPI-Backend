@@ -28,9 +28,9 @@ async def get_current_user(
     service: UserServiceDep,
 ) -> User:
 
-    user_id = verify_token(token, required_type="access")
+    user_id_str = verify_token(token, required_type="access")
 
-    user = await service.get_by_id(user_id)
+    user = await service.get_by_id(int(user_id_str))
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
