@@ -1,9 +1,9 @@
 from typing import Annotated
-from fastapi import Depends, status, HTTPException
+from fastapi import Depends, HTTPException
 from sqlmodel.ext.asyncio.session import AsyncSession
 from fastapi.security import OAuth2PasswordBearer
-import jwt
 
+from app.core.security import verify_token
 from app.core.settings import settings
 from app.db.session import get_session
 from app.users.service import UserService
@@ -27,34 +27,9 @@ async def get_current_user(
     token: TokenDep,
     service: UserServiceDep,
 ) -> User:
-    try:
-        payload = jwt.decode(
-            token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM]
-        )
-        token_data = payload.get("sub")
 
-        if token_data is None:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
+    user_id = verify_token(token, required_type="access")
 
-        if payload.get("type") != "access":
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Incorrect token type",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-
-        user_id = int(token_data)
-
-    except (jwt.InvalidTokenError, ValueError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
     user = await service.get_by_id(user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
