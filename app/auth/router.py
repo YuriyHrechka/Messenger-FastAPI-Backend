@@ -25,7 +25,7 @@ async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     user_service: UserServiceDep,
 ):
-    user = await user_service.get_by_email(form_data.username)
+    user = await user_service.get_by_username(form_data.username)
 
     if (
         not user
