@@ -1,44 +1,49 @@
-from fastapi import HTTPException, status
-from sqlalchemy import ScalarResult
 from sqlmodel.ext.asyncio.session import AsyncSession
-from sqlmodel import desc, select
-from app.chat.models import Chat, ChatParticipant, Message
-from app.chat.schemas import ChatCreate, MessageCreate
-from app.users.models import User
+from fastapi import HTTPException, status
+from sqlalchemy.orm import selectinload
+from sqlmodel import col, desc, select
 from typing import List, Sequence
+
+from .models import Chat, ChatParticipant, Message
+from .schemas import ChatCreate, MessageCreate
+from app.users.models import User
 
 
 class ChatService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def create_chat(self, chat_data: ChatCreate, current_user_id: int):
+    async def create_chat(self, chat_data: ChatCreate, current_user_id: int):   
+        await self._validate_if_users_exist(chat_data)
+        
         new_chat = Chat(title=chat_data.title, is_group=chat_data.is_group)
-
         self.session.add(new_chat)
         await self.session.commit()
         await self.session.refresh(new_chat)
 
-        admin_participant = ChatParticipant(
-            user_id=current_user_id, chat_id=new_chat.id  # type: ignore
-        )
-        self.session.add(admin_participant)
+        all_participant_ids = set(chat_data.participant_ids)
+        all_participant_ids.add(current_user_id)
 
-        unique_ids = set(chat_data.participant_ids)
-        if current_user_id in unique_ids:
-            unique_ids.remove(current_user_id)
-
-        for user_id in unique_ids:
-            participant = ChatParticipant(user_id=user_id, chat_id=new_chat.id)  # type: ignore
-            self.session.add(participant)
-
+        participants = [
+            ChatParticipant(user_id=uid, chat_id=new_chat.id)  # type: ignore
+            for uid in all_participant_ids
+        ]
+        self.session.add_all(participants)
         await self.session.commit()
-        await self.session.refresh(new_chat)
-        return new_chat
+
+        statement = (
+            select(Chat)
+            .where(Chat.id == new_chat.id)
+            .options(selectinload(Chat.users))  # type: ignore
+        )
+        result = await self.session.exec(statement)
+        
+        return result.one()
 
     async def get_user_chats(self, user_id: int) -> Sequence[Chat]:
         statement = (
             select(Chat)
+            .options(selectinload(Chat.users))  # type: ignore
             .join(ChatParticipant)
             .where(ChatParticipant.user_id == user_id)
             .order_by(desc(Chat.created_at))
@@ -84,4 +89,16 @@ class ChatService:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="You are not chat participant",
+            )
+
+    async def _validate_if_users_exist(self, chat_data: ChatCreate):
+        statement = select(User.id).where(col(User.id).in_(chat_data.participant_ids))
+
+        result = await self.session.exec(statement)
+        found_ids = result.all()
+
+        if len(found_ids) != len(set(chat_data.participant_ids)):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="One or more participants do not exist",
             )
