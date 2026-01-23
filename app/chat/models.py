@@ -21,12 +21,13 @@ class ChatParticipant(SQLModel, table=True):
 
     user_id: int = Field(foreign_key="user.id", primary_key=True)
     chat_id: int = Field(foreign_key="chat.id", primary_key=True)
-    joined_at: datetime = Field(
+    created_at: Optional[datetime] = Field(
+        default=None,
         sa_column=Column(
             DateTime(timezone=True),
             server_default=text("TIMEZONE('utc', now())"),
             nullable=False,
-        )
+        ),
     )
 
 
@@ -46,14 +47,15 @@ class Chat(SQLModel, table=True):
     """
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    title: Optional[str] = None
+    title: Optional[str] = Field(default=None, max_length=50)
     is_group: bool = Field(default=False)
-    created_at: datetime = Field(
+    created_at: Optional[datetime] = Field(
+        default=None,
         sa_column=Column(
             DateTime(timezone=True),
             server_default=text("TIMEZONE('utc', now())"),
             nullable=False,
-        )
+        ),
     )
 
     users: List["User"] = Relationship(
@@ -78,12 +80,13 @@ class Message(SQLModel, table=True):
 
     id: Optional[int] = Field(default=None, primary_key=True)
     content: str
-    created_at: datetime = Field(
+    created_at: Optional[datetime] = Field(
+        default=None,
         sa_column=Column(
             DateTime(timezone=True),
             server_default=text("TIMEZONE('utc', now())"),
             nullable=False,
-        )
+        ),
     )
     chat_id: int = Field(foreign_key="chat.id")
     sender_id: int = Field(foreign_key="user.id")
