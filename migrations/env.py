@@ -9,7 +9,8 @@ from sqlmodel import SQLModel
 from alembic import context
 
 from app.core.settings import settings
-from app.db.models import User, Chat, Message, ChatParticipant # type: ignore
+from app.users.models import User
+from app.chat.models import Chat, Message, ChatParticipant 
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
