@@ -163,7 +163,12 @@ class ChatService:
     async def _get_chat_with_users(self, chat_id: int) -> Chat:
         statement = select(Chat).where(Chat.id == chat_id).options(selectinload(Chat.users))  # type: ignore
         result = await self.session.exec(statement)
-        return result.one()
+        chat = result.first()
+
+        if chat is None:
+            raise ValueError(f"No chat found with ID {chat_id}")
+
+        return chat
 
     async def _validate_participation(self, chat_id: int, user_id: int):
         chat_participant = await self.session.get(ChatParticipant, (user_id, chat_id))
