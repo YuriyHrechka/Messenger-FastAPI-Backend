@@ -166,7 +166,7 @@ class ChatService:
         chat = result.first()
 
         if chat is None:
-            raise ValueError(f"No chat found with ID {chat_id}")
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"No chat found with ID {chat_id}")
 
         return chat
 
