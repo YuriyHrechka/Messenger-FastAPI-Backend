@@ -81,3 +81,6 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 
 async def get_chat_service(session: SessionDep) -> ChatService:
     return ChatService(session)
+
+
+ChatServiceDep = Annotated[ChatService, Depends(get_chat_service)]
