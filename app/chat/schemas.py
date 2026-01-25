@@ -32,6 +32,10 @@ class ChatCreate(SQLModel):
         return ids
 
 
+class ChatUpdate(SQLModel):
+    title: Optional[str] = None
+
+
 class MessageRead(SQLModel):
     id: int
     chat_id: int
