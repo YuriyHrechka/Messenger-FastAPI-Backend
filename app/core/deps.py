@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 import logging
 
 from app.auth.service import AuthService
+from app.chat.service import ChatService
 from app.core.security import verify_token
 from app.core.settings import settings
 from app.db.session import get_session
@@ -76,3 +77,10 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+async def get_chat_service(session: SessionDep) -> ChatService:
+    return ChatService(session)
+
+
+ChatServiceDep = Annotated[ChatService, Depends(get_chat_service)]
